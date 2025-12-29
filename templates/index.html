@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker - </title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container">
+ <header class="header">
+  <div class="logo">
+   <i class="fas fa-rupee-sign"></i>
+   <h1>Expense Tracker</h1>
+  </div>
+  <nav class="nav">
+   <a href="/" class="nav-link">Home</a>
+   <a href="/reports" class="nav-link">Reports</a>
+  </nav>
+ </header>
+
+ {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="messages">
+   {% for category, message in messages %}
+   <div class="message {{ category }}">
+    {{ message }}
+    <span class="close" onclick="this.parentElement.style.display='none'">×</span>
+   </div>
+   {% endfor %}
+  </div>
+  {% endif %}
+ {% endwith %}
+
+ {% if show_reports %}
+ <div class="reports-page">
+  <h2 class="page-title">Spending Reports</h2>
+  
+  <div class="summary-cards">
+   <div class="summary-card">
+    <div class="summary-icon">
+     <i class="fas fa-money-bill-wave"></i>
+    </div>
+    <div class="summary-content">
+     <h3>Total Spent</h3>
+     <div class="summary-amount">₹{{ "%.2f"|format(total_amount) }}</div>
+    </div>
+   </div>
+   
+   <div class="summary-card">
+    <div class="summary-icon">
+     <i class="fas fa-receipt"></i>
+    </div>
+    <div class="summary-content">
+     <h3>Total Expenses</h3>
+     <div class="summary-amount">{{ total_count }}</div>
+    </div>
+   </div>
+  </div>
+
+  <div class="report-section">
+   <h3><i class="fas fa-chart-pie"></i> By Category</h3>
+   {% if category_totals %}
+    {% for category in category_totals %}
+    <div class="category-item">
+     <div class="category-header">
+      <span class="category-name">{{ category['category'] or 'Uncategorized' }}</span>
+      <span class="category-amount">₹{{ "%.2f"|format(category['total']) }}</span>
+     </div>
+     <div class="progress-bar">
+      {% set percentage = (category['total'] / total_amount * 100) if total_amount > 0 else 0 %}
+      <div class="progress-fill" style="width: {{ percentage|round(1) }}%"></div>
+     </div>
+     <div class="category-count">{{ category['count'] }} expenses</div>
+    </div>
+    {% endfor %}
+   {% else %}
+   <p class="empty-text">No expenses yet</p>
+   {% endif %}
+  </div>
+
+  <div class="report-section">
+   <h3><i class="fas fa-chart-line"></i> Last 6 Months</h3>
+   {% if monthly_data %}
+    {% for month in monthly_data %}
+    <div class="month-item">
+     <div class="month-name">{{ month['month'] }}</div>
+     <div class="month-details">
+      <span>₹{{ "%.2f"|format(month['total']) }}</span>
+      <span class="month-count">{{ month['count'] }} expenses</span>
+     </div>
+    </div>
+    {% endfor %}
+   {% else %}
+   <p class="empty-text">No monthly data</p>
+   {% endif %}
+  </div>
+
+  <div class="back-home">
+   <a href="/" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Back to Home
+   </a>
+  </div>
+ </div>
+
+ {% else %}
+ <div class="home-page">
+  <div class="month-summary">
+   <h2>{{ current_month }}</h2>
+   <div class="total-amount">₹{{ "%.2f"|format(monthly_total) }}</div>
+   <div class="total-count">{{ monthly_count }} expenses this month</div>
+  </div>
+
+  <div class="add-expense">
+   <h3>Add New Expense</h3>
+   <form method="POST" action="/add" class="expense-form">
+    <div class="form-group">
+     <div class="input-with-icon">
+      <i class="fas fa-rupee-sign"></i>
+      <input type="number" name="amount" step="0.01" min="0" placeholder="Amount" required>
+     </div>
+    </div>
+    
+    <div class="form-group">
+     <div class="input-with-icon">
+      <i class="fas fa-pen"></i>
+      <input type="text" name="description" placeholder="Description" required>
+     </div>
+    </div>
+    
+    <div class="form-group">
+     <select name="category">
+      <option value="">Select Category</option>
+      <option value="Food">Food</option>
+      <option value="Transport">Transport</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Bills">Bills</option>
+      <option value="Entertainment">Entertainment</option>
+      <option value="Healthcare">Healthcare</option>
+      <option value="Education">Education</option>
+      <option value="Other">Other</option>
+     </select>
+    </div>
+    
+    <div class="form-group">
+     <input type="date" name="date" value="{{ now.strftime('%Y-%m-%d') if now else '' }}">
+    </div>
+    
+    <button type="submit" class="btn btn-primary">
+     <i class="fas fa-plus"></i> Add Expense
+    </button>
+   </form>
+  </div>
+
+  <div class="recent-expenses">
+   <div class="section-header">
+    <h3>Recent Expenses</h3>
+    {% if expenses %}
+    <span class="total-count">{{ expenses|length }} total</span>
+    {% endif %}
+   </div>
+   
+   {% if expenses %}
+   <div class="expenses-list">
+    {% for expense in expenses %}
+    <div class="expense-item">
+     <div class="expense-main">
+      <div class="expense-date">{{ expense['date'] }}</div>
+      <div class="expense-desc">{{ expense['description'] }}</div>
+      {% if expense['category'] %}
+      <span class="expense-category">{{ expense['category'] }}</span>
+      {% endif %}
+     </div>
+     <div class="expense-right">
+      <div class="expense-amount">₹{{ "%.2f"|format(expense['amount']) }}</div>
+      <a href="/delete/{{ expense['id'] }}" class="delete-btn" onclick="return confirm('Delete this expense?')">
+       <i class="fas fa-trash"></i>
+      </a>
+     </div>
+    </div>
+    {% endfor %}
+   </div>
+   {% else %}
+   <div class="empty-state">
+    <i class="fas fa-receipt"></i>
+    <p>No expenses yet. Add your first expense above.</p>
+   </div>
+   {% endif %}
+  </div>
+
+  <div class="categories-sidebar">
+   <h3>Monthly Categories</h3>
+   {% if categories %}
+    {% for category in categories %}
+    <div class="category-summary">
+     <span>{{ category['category'] or 'Uncategorized' }}</span>
+     <span>₹{{ "%.2f"|format(category['total']) }}</span>
+    </div>
+    {% endfor %}
+   {% else %}
+   <p class="empty-text">No expenses this month</p>
+   {% endif %}
+   
+   <div class="view-reports">
+    <a href="/reports" class="btn btn-outline">
+     <i class="fas fa-chart-bar"></i> View Full Reports
+    </a>
+   </div>
+  </div>
+ </div>
+ {% endif %}
+
+ <footer class="footer">
+  <p>Expense Tracker • Made with Flask • ₹ Rupees</p>
+ </footer>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+ const dateField = document.querySelector('input[type="date"]');
+ if (dateField) {
+  const today = new Date().toISOString().split('T')[0];
+  dateField.value = today;
+ }
+ 
+ setTimeout(function() {
+  const messages = document.querySelectorAll('.message');
+  messages.forEach(function(msg) {
+   msg.style.opacity = '0';
+   setTimeout(function() {
+    msg.style.display = 'none';
+   }, 500);
+  });
+ }, 3000);
+});
+</script>
+</body>
+</html>
