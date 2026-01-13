@@ -5,6 +5,16 @@ This project helps users record, view, and manage their daily expenses efficient
 
 ---
 
+ScreenShot of Website:
+![Main page](https://github.com/user-attachments/assets/c68e439a-f8a0-440e-8e71-c04ebe1d6a67)
+![Reports](https://github.com/user-attachments/assets/4fa81fa6-4fcd-4337-a147-0054725bf69a)
+![Home](https://github.com/user-attachments/assets/1f34df02-e712-4b10-b49f-fac35752a7cf)
+
+
+
+
+
+
 ## 🚀 Features
 
 - Add new expenses with amount, category, and description
